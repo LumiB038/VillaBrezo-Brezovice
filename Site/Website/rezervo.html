@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa-Brezo Brezovice</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/sq.js"></script>
+    <link rel="apple-touch-icon" sizes="180x180" href="Foto/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="Foto/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="Foto/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+</head>
+<body>
+  <nav class="navbar" id="top">
+    <a href="main.html">
+        <img src="Foto/logo.png" alt="Villa Brezo Logo" class="navbar-logo">
+    </a>
+
+    <div class="navbar-title">Villa Brezo - Brezovicë</div>
+
+    <ul>
+        <li><a href="main.html">Home</a></li>
+        <li><a href="aboutus.html">About Us</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="ofertat.html">Oferta</a></li>
+        <li><a href="rezervo.html">Rezervo Ketu</a></li>
+    </ul>
+  </nav>
+
+  <section class="hero-container">
+    <img src="Foto/background.jpg" alt="Brezovica Villa" class="hero-image"/>
+
+    <div class="booking-container">
+      <h2>Rezervo Villën</h2>
+      <form>
+        <input type="text" name="emri" placeholder="Emri" required>
+        <input type="text" name="mbiemri" placeholder="Mbiemri" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="text" name="telefoni" placeholder="Numri i telefonit" required>
+
+        <label for="datat">Zgjidh datat e qëndrimit</label>
+        <input type="text" id="datat" name="datat" placeholder="Prej datës - Deri në datë" required>
+
+        <select name="dhoma_id" required>
+            <option value="" disabled selected>Zgjidh llojin e dhomës</option>
+            <option value="1">Kati i 1-re - €150/nata/5 persona</option>
+            <option value="2">Loft Alpin (shtretër) - €200/nata/10 persona</option>
+        </select>
+
+        <input type="number" name="persona" placeholder="Numri i personave" min="1" required>
+        <textarea name="kerkesat" placeholder="Kërkesa të veçanta (opsionale)" rows="3"></textarea>
+
+        <button type="submit">Konfirmo</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-left">
+        <p><i class="fa fa-phone"></i> +383 49 999 035</p>
+        <p><i class="fa fa-envelope"></i> villabrezo.brezovice@gmail.com</p>
+        <p><i class="fa fa-facebook-f"></i> <a href="https://www.facebook.com/villabrezo.brezovice" target="_blank">Villa Brezo</a></p>
+        <p><i class="fa fa-instagram"></i> <a href="https://www.instagram.com/villabrezo/" target="_blank">Villa Brezo</a></p>
+    </div>
+    <div class="footer-right">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3317.774600185949!2d21.013413716386406!3d42.19731885903424!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x13538bc20c884a01%3A0x1ec6bf4df24b5b64!2sVilla%20Brezo!5e0!3m2!1sen!2s!4v1746363702364!5m2!1sen!2s"
+            width="100%"
+            height="180"
+            style="border:0;"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+        <div class="back-to-top">
+            <a href="#top">Kthehu lart</a>
+        </div>
+    </div>
+  </footer>
+
+
+<script>
+  const kalendari = flatpickr('#datat', {
+    mode: 'range',
+    minDate: 'today',
+    dateFormat: 'd/m/Y',
+    locale: 'sq',
+    showMonths: 1,
+    onChange: function (selectedDates, dateStr, instance) {
+      if (selectedDates.length === 1) {
+        instance.set('minDate', selectedDates[0]);
+      } else {
+        instance.set('minDate', 'today');
+      }
+    }
+  });
+
+  document.querySelector('.booking-container form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (kalendari.selectedDates.length < 2) {
+      alert('Ju lutem zgjidhni datën e fillimit dhe datën e përfundimit.');
+      return;
+    }
+
+    const forma = e.target;
+    const te_dhenat = Object.fromEntries(new FormData(forma));
+    te_dhenat.data_hyrjes = kalendari.formatDate(kalendari.selectedDates[0], 'Y-m-d');
+    te_dhenat.data_daljes = kalendari.formatDate(kalendari.selectedDates[1], 'Y-m-d');
+    delete te_dhenat.datat;
+
+    try {
+      const pergjigja = await fetch('/api/rezervo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(te_dhenat)
+      });
+      const rezultati = await pergjigja.json();
+      alert(rezultati.mesazhi);
+      if (pergjigja.ok) {
+        forma.reset();
+        kalendari.clear();
+      }
+    } catch (gabim) {
+      alert('Ndodhi një gabim. Provoni përsëri.');
+    }
+  });
+</script>
+</body>
+</html>
