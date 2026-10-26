@@ -118,6 +118,7 @@ def admin():
     return render_template("admin.html")
 
 
+# READ
 @app.route("/api/admin/rezervimet")
 @kerkon_hyrje
 def admin_rezervimet():
@@ -131,6 +132,7 @@ def admin_rezervimet():
     return jsonify([dict(r) for r in rreshtat])
 
 
+# UPDATE (statusi)
 @app.route("/api/admin/rezervimet/<int:rid>/statusi", methods=["POST"])
 @kerkon_hyrje
 def admin_statusi(rid):
@@ -142,6 +144,63 @@ def admin_statusi(rid):
     conn.commit()
     conn.close()
     return jsonify(mesazhi="U ruajt.")
+
+
+# UPDATE (datat dhe personat)
+@app.route("/api/admin/rezervimet/<int:rid>", methods=["PUT"])
+@kerkon_hyrje
+def admin_edito(rid):
+    d = request.get_json(silent=True) or {}
+    try:
+        persona = int(d.get("persona"))
+        hyrja = date.fromisoformat(d.get("data_hyrjes", ""))
+        dalja = date.fromisoformat(d.get("data_daljes", ""))
+    except (TypeError, ValueError):
+        return jsonify(mesazhi="Të dhënat janë të pasakta."), 400
+
+    if dalja <= hyrja or persona < 1:
+        return jsonify(mesazhi="Datat ose numri i personave nuk janë të vlefshëm."), 400
+
+    conn = lidhu()
+    r = conn.execute("SELECT * FROM rezervimet WHERE id = ?", (rid,)).fetchone()
+    if not r:
+        conn.close()
+        return jsonify(mesazhi="Rezervimi nuk u gjet."), 404
+
+    dhoma = conn.execute("SELECT * FROM dhomat WHERE id = ?", (r["dhoma_id"],)).fetchone()
+    if persona > dhoma["kapaciteti"]:
+        conn.close()
+        return jsonify(mesazhi=f"Kjo dhomë pranon maksimumi {dhoma['kapaciteti']} persona."), 400
+
+    zene = conn.execute("""
+        SELECT 1 FROM rezervimet
+        WHERE dhoma_id = ? AND statusi != 'anuluar' AND id != ?
+          AND data_hyrjes < ? AND data_daljes > ?
+    """, (r["dhoma_id"], rid, dalja.isoformat(), hyrja.isoformat())).fetchone()
+    if zene:
+        conn.close()
+        return jsonify(mesazhi="Dhoma është e zënë në këto data."), 409
+
+    total = (dalja - hyrja).days * dhoma["cmimi"]
+    conn.execute("""
+        UPDATE rezervimet
+        SET data_hyrjes = ?, data_daljes = ?, persona = ?, cmimi_total = ?
+        WHERE id = ?
+    """, (hyrja.isoformat(), dalja.isoformat(), persona, total, rid))
+    conn.commit()
+    conn.close()
+    return jsonify(mesazhi="U ndryshua.")
+
+
+# DELETE
+@app.route("/api/admin/rezervimet/<int:rid>", methods=["DELETE"])
+@kerkon_hyrje
+def admin_fshij(rid):
+    conn = lidhu()
+    conn.execute("DELETE FROM rezervimet WHERE id = ?", (rid,))
+    conn.commit()
+    conn.close()
+    return jsonify(mesazhi="U fshi.")
 
 
 if __name__ == "__main__":

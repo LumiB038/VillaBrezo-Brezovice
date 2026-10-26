@@ -26,6 +26,8 @@
               cursor: pointer; margin-right: 4px; }
   .b-po { background: #28a745; }
   .b-jo { background: #c0392b; }
+  .b-edito { background: #0d6efd; }
+  .b-fshij { background: #6c757d; }
   .bosh { padding: 30px; text-align: center; color: #777; }
 </style>
 </head>
@@ -115,6 +117,15 @@
         b.onclick = () => { if (confirm("Ta anuloj rezervimin #" + r.id + "?")) ndrysho(r.id, "anuluar"); };
         tdV.appendChild(b);
       }
+
+      const bE = el("button", "Edito", "b-edito");
+      bE.onclick = () => edito(r);
+      tdV.appendChild(bE);
+
+      const bF = el("button", "Fshij", "b-fshij");
+      bF.onclick = () => { if (confirm("Ta fshij përgjithmonë rezervimin #" + r.id + "?")) fshij(r.id); };
+      tdV.appendChild(bF);
+
       tr.appendChild(tdV);
       trupi.appendChild(tr);
     });
@@ -133,6 +144,29 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ statusi })
     });
+    ngarko();
+  }
+
+  async function edito(r) {
+    const hyrja = prompt("Data e hyrjes (VVVV-MM-DD):", r.data_hyrjes);
+    if (hyrja === null) return;
+    const dalja = prompt("Data e daljes (VVVV-MM-DD):", r.data_daljes);
+    if (dalja === null) return;
+    const persona = prompt("Numri i personave:", r.persona);
+    if (persona === null) return;
+
+    const p = await fetch("/api/admin/rezervimet/" + r.id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data_hyrjes: hyrja, data_daljes: dalja, persona })
+    });
+    const d = await p.json();
+    if (!p.ok) alert(d.mesazhi);
+    ngarko();
+  }
+
+  async function fshij(id) {
+    await fetch("/api/admin/rezervimet/" + id, { method: "DELETE" });
     ngarko();
   }
 
