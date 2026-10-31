@@ -22,6 +22,20 @@ def krijo_tabelat():
         cmimi REAL
     );
 
+    CREATE TABLE IF NOT EXISTS packages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        price_per_night REAL NOT NULL,
+        max_guests INTEGER NOT NULL,
+        is_family INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        valid_from TEXT,
+        valid_to TEXT,
+        room_id INTEGER,
+        FOREIGN KEY (room_id) REFERENCES dhomat(id)
+    );
+
     CREATE TABLE IF NOT EXISTS rezervimet (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         dhoma_id INTEGER NOT NULL,
@@ -50,6 +64,12 @@ def krijo_tabelat():
     INSERT OR IGNORE INTO dhomat (id, emri, cmimi, kapaciteti) VALUES
         (1, 'Kati i 1-re', 150, 5),
         (2, 'Loft Alpin', 200, 10);
+
+    INSERT OR IGNORE INTO packages
+        (id, title, description, price_per_night, max_guests, is_family, is_active, room_id) VALUES
+        (1, 'Paketa Familjare', 'Qendrim komod per familjen, afer pistave te skijimit.', 130, 5, 1, 1, 1),
+        (2, 'Paketa Dimerore', 'Atmosfere e ngrohte dimerore, me oxhak dhe kuzhine.', 150, 5, 0, 1, 1),
+        (3, 'Fundjave ne Brezovice', 'Arratisuni per nje fundjave ne mal.', 170, 5, 0, 1, 1);
     """)
     conn.commit()
     conn.close()

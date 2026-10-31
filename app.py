@@ -93,6 +93,108 @@ def rezervo():
     return jsonify(mesazhi=f"Rezervimi u dërgua me sukses! {net} net, totali: €{total:.0f}. Do t'ju kontaktojmë së shpejti."), 201
 
 
+# ---------- BOTI: REKOMANDIMI I PAKETAVE ----------
+@app.route("/api/recommend")
+def recommend():
+    try:
+        adults = int(request.args.get("adults", 1))
+        children = int(request.args.get("children", 0))
+    except ValueError:
+        return jsonify(mesazhi="Numri i te rriturve dhe i femijeve duhet te jete numer."), 400
+
+    if adults < 1 or children < 0:
+        return jsonify(mesazhi="Duhet te kete se paku 1 i rritur."), 400
+    guests = adults + children
+
+    check_in = request.args.get("check_in", "").strip()
+    check_out = request.args.get("check_out", "").strip()
+    nights = None
+    reference_date = date.today()
+
+    if check_in or check_out:
+        try:
+            hyrja = date.fromisoformat(check_in)
+            dalja = date.fromisoformat(check_out)
+        except ValueError:
+            return jsonify(mesazhi="Datat nuk jane te sakta."), 400
+        if dalja <= hyrja:
+            return jsonify(mesazhi="Data e daljes duhet te jete pas dates se hyrjes."), 400
+        nights = (dalja - hyrja).days
+        reference_date = hyrja
+
+    ref = reference_date.isoformat()
+
+    conn = lidhu()
+    packages = conn.execute("""
+        SELECT * FROM packages
+        WHERE is_active = 1
+          AND max_guests >= ?
+          AND (valid_from IS NULL OR valid_from = '' OR valid_from <= ?)
+          AND (valid_to IS NULL OR valid_to = '' OR valid_to >= ?)
+    """, (guests, ref, ref)).fetchall()
+
+    # Nuk ka paketa: gjejme arsyen (shume persona, ose jashte periudhes)
+    if not packages:
+        max_row = conn.execute(
+            "SELECT MAX(max_guests) AS m FROM packages WHERE is_active = 1"
+        ).fetchone()
+        conn.close()
+        max_cap = max_row["m"]
+        if max_cap is None:
+            msg = "Momentalisht nuk ka paketa aktive."
+        elif guests > max_cap:
+            msg = (f"Per {guests} persona nuk kemi paketa. Paketat tona pranojne "
+                   f"deri ne {max_cap} persona. Na kontaktoni per grupe me te medha.")
+        else:
+            msg = "Nuk ka paketa aktive per kete periudhe."
+        return jsonify(recommendations=[], mesazhi=msg)
+
+    available = []
+    for p in packages:
+        if nights is not None and p["room_id"]:
+            busy = conn.execute("""
+                SELECT 1 FROM rezervimet
+                WHERE dhoma_id = ? AND statusi != 'anuluar'
+                  AND data_hyrjes < ? AND data_daljes > ?
+            """, (p["room_id"], check_out, check_in)).fetchone()
+            if busy:
+                continue
+        available.append(p)
+    conn.close()
+
+    # Paketat ekzistojne, por dhoma eshte e zene ne keto data
+    if not available:
+        return jsonify(recommendations=[],
+                       mesazhi="Dhoma eshte e zene ne keto data. Provoni data tjera.")
+
+    def sort_key(p):
+        family_first = 0 if (children > 0 and p["is_family"]) else 1
+        return (family_first, p["max_guests"] - guests, p["price_per_night"])
+
+    available.sort(key=sort_key)
+
+    results = []
+    for p in available[:3]:
+        if children > 0 and p["is_family"]:
+            reason = f"Paketa familjare per {adults} te rritur dhe {children} femije."
+        else:
+            reason = f"Pershtatet per {guests} persona (deri ne {p['max_guests']})."
+        item = {
+            "id": p["id"],
+            "title": p["title"],
+            "description": p["description"],
+            "price_per_night": p["price_per_night"],
+            "room_id": p["room_id"],
+            "reason": reason,
+        }
+        if nights is not None:
+            item["nights"] = nights
+            item["total_price"] = nights * p["price_per_night"]
+        results.append(item)
+
+    return jsonify(recommendations=results, mesazhi="Ja rekomandimet tona:")
+
+
 # ---------- PANELI ADMIN ----------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():

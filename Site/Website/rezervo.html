@@ -98,6 +98,33 @@
     }
   });
 
+  // ---- Plotesimi nga boti ----
+  (function () {
+    const p = new URLSearchParams(window.location.search);
+    const forma = document.querySelector('.booking-container form');
+
+    const room = p.get('room');
+    if (room && forma.elements['dhoma_id'].querySelector('option[value="' + room + '"]')) {
+      forma.elements['dhoma_id'].value = room;
+    }
+
+    const persona = parseInt(p.get('persona'), 10);
+    if (!isNaN(persona) && persona >= 1) {
+      forma.elements['persona'].value = persona;
+    }
+
+    const checkIn = p.get('check_in');
+    const checkOut = p.get('check_out');
+    if (checkIn && checkOut) {
+      kalendari.setDate([checkIn, checkOut], true, 'Y-m-d');
+    }
+
+    const paketa = p.get('package');
+    if (paketa) {
+      forma.elements['kerkesat'].value = 'Paketa e zgjedhur: ' + paketa;
+    }
+  })();
+
   document.querySelector('.booking-container form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
