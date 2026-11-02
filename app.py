@@ -8,7 +8,8 @@ from database import krijo_tabelat, lidhu
 
 SITE = next(root for root, _, files in os.walk("Site") if "main.html" in files)
 
-app = Flask(__name__, static_folder=SITE, static_url_path="")
+app = Flask(__name__, static_folder=SITE, static_url_path="",
+            template_folder=os.path.join(SITE, "Admins"))
 
 # ---- NDRYSHOJI KËTO DY VLERA ----
 app.secret_key = os.environ.get("SECRET_KEY", "ndrysho-kete-fjale-te-gjate-dhe-te-rastesishme")

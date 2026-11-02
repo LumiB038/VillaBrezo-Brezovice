@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paneli Admin - Villa Brezo</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f3f4f6; margin: 0; color: #222; }
+  header { background: #2b2b2b; color: #fff; padding: 14px 24px; display: flex;
+           justify-content: space-between; align-items: center; }
+  header a { color: #fff; margin-left: 16px; text-decoration: none; }
+  main { padding: 24px; }
+  .filtrat { margin-bottom: 16px; }
+  .filtrat button { padding: 8px 14px; margin-right: 6px; border: 1px solid #bbb;
+                    background: #fff; border-radius: 6px; cursor: pointer; }
+  .filtrat button.aktiv { background: #2b2b2b; color: #fff; border-color: #2b2b2b; }
+  .tabela-kutia { overflow-x: auto; background: #fff; border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 900px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+  th { background: #fafafa; }
+  .status { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+  .st-pritje { background: #fff3cd; color: #856404; }
+  .st-konfirmuar { background: #d4edda; color: #155724; }
+  .st-anuluar { background: #f8d7da; color: #721c24; }
+  td button { padding: 6px 10px; border: 0; border-radius: 5px; color: #fff;
+              cursor: pointer; margin-right: 4px; }
+  .b-po { background: #28a745; }
+  .b-jo { background: #c0392b; }
+  .b-edito { background: #0d6efd; }
+  .b-fshij { background: #6c757d; }
+  .bosh { padding: 30px; text-align: center; color: #777; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Villa Brezo - Paneli Admin</strong>
+  <span><a href="/" target="_blank">Shiko faqen</a><a href="/admin/dil">Dil</a></span>
+</header>
+<main>
+  <div class="filtrat" id="filtrat"></div>
+  <div class="tabela-kutia">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Mysafiri</th><th>Kontakti</th><th>Dhoma</th>
+            <th>Datat</th><th>Persona</th><th>Totali</th><th>Kërkesa</th>
+            <th>Statusi</th><th>Veprime</th></tr>
+      </thead>
+      <tbody id="trupi"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+  let te_gjitha = [];
+  let filtri = "të gjitha";
+  const opsionet = ["të gjitha", "në pritje", "konfirmuar", "anuluar"];
+
+  function el(tag, tekst, klasa) {
+    const e = document.createElement(tag);
+    if (tekst !== undefined) e.textContent = tekst;   // textContent = i sigurt nga XSS
+    if (klasa) e.className = klasa;
+    return e;
+  }
+
+  function vizatoFiltrat() {
+    const kutia = document.getElementById("filtrat");
+    kutia.innerHTML = "";
+    opsionet.forEach(o => {
+      const b = el("button", o);
+      if (o === filtri) b.className = "aktiv";
+      b.onclick = () => { filtri = o; vizatoFiltrat(); vizatoTabelen(); };
+      kutia.appendChild(b);
+    });
+  }
+
+  function klasaStatusit(s) {
+    return s === "konfirmuar" ? "st-konfirmuar" : s === "anuluar" ? "st-anuluar" : "st-pritje";
+  }
+
+  function vizatoTabelen() {
+    const trupi = document.getElementById("trupi");
+    trupi.innerHTML = "";
+    const lista = te_gjitha.filter(r => filtri === "të gjitha" || r.statusi === filtri);
+
+    if (!lista.length) {
+      const tr = document.createElement("tr");
+      const td = el("td", "Nuk ka rezervime.", "bosh");
+      td.colSpan = 10;
+      tr.appendChild(td);
+      trupi.appendChild(tr);
+      return;
+    }
+
+    lista.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.appendChild(el("td", r.id));
+      tr.appendChild(el("td", r.emri + " " + r.mbiemri));
+      tr.appendChild(el("td", r.email + " | " + r.telefoni));
+      tr.appendChild(el("td", r.dhoma));
+      tr.appendChild(el("td", r.data_hyrjes + " → " + r.data_daljes));
+      tr.appendChild(el("td", r.persona));
+      tr.appendChild(el("td", "€" + Math.round(r.cmimi_total || 0)));
+      tr.appendChild(el("td", r.kerkesat || "-"));
+
+      const tdSt = document.createElement("td");
+      tdSt.appendChild(el("span", r.statusi, "status " + klasaStatusit(r.statusi)));
+      tr.appendChild(tdSt);
+
+      const tdV = document.createElement("td");
+      if (r.statusi !== "konfirmuar") {
+        const b = el("button", "Konfirmo", "b-po");
+        b.onclick = () => ndrysho(r.id, "konfirmuar");
+        tdV.appendChild(b);
+      }
+      if (r.statusi !== "anuluar") {
+        const b = el("button", "Anulo", "b-jo");
+        b.onclick = () => { if (confirm("Ta anuloj rezervimin #" + r.id + "?")) ndrysho(r.id, "anuluar"); };
+        tdV.appendChild(b);
+      }
+
+      const bE = el("button", "Edito", "b-edito");
+      bE.onclick = () => edito(r);
+      tdV.appendChild(bE);
+
+      const bF = el("button", "Fshij", "b-fshij");
+      bF.onclick = () => { if (confirm("Ta fshij përgjithmonë rezervimin #" + r.id + "?")) fshij(r.id); };
+      tdV.appendChild(bF);
+
+      tr.appendChild(tdV);
+      trupi.appendChild(tr);
+    });
+  }
+
+  async function ngarko() {
+    const p = await fetch("/api/admin/rezervimet");
+    if (p.status === 401) { location.href = "/admin/login"; return; }
+    te_gjitha = await p.json();
+    vizatoTabelen();
+  }
+
+  async function ndrysho(id, statusi) {
+    await fetch("/api/admin/rezervimet/" + id + "/statusi", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ statusi })
+    });
+    ngarko();
+  }
+
+  async function edito(r) {
+    const hyrja = prompt("Data e hyrjes (VVVV-MM-DD):", r.data_hyrjes);
+    if (hyrja === null) return;
+    const dalja = prompt("Data e daljes (VVVV-MM-DD):", r.data_daljes);
+    if (dalja === null) return;
+    const persona = prompt("Numri i personave:", r.persona);
+    if (persona === null) return;
+
+    const p = await fetch("/api/admin/rezervimet/" + r.id, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data_hyrjes: hyrja, data_daljes: dalja, persona })
+    });
+    const d = await p.json();
+    if (!p.ok) alert(d.mesazhi);
+    ngarko();
+  }
+
+  async function fshij(id) {
+    await fetch("/api/admin/rezervimet/" + id, { method: "DELETE" });
+    ngarko();
+  }
+
+  vizatoFiltrat();
+  ngarko();
+</script>
+</body>
+</html>
