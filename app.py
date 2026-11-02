@@ -95,8 +95,19 @@ def rezervo():
 
 
 # ---------- BOTI: REKOMANDIMI I PAKETAVE ----------
+def room_is_free(conn, room_id, check_in, check_out):
+    """Kthen True nese dhoma nuk ka rezervim aktiv qe perplaset me keto data."""
+    busy = conn.execute("""
+        SELECT 1 FROM rezervimet
+        WHERE dhoma_id = ? AND statusi != 'anuluar'
+          AND data_hyrjes < ? AND data_daljes > ?
+    """, (room_id, check_out, check_in)).fetchone()
+    return busy is None
+
+
 @app.route("/api/recommend")
 def recommend():
+    # HAPI 1: lexojme numrin e te rriturve dhe te femijeve
     try:
         adults = int(request.args.get("adults", 1))
         children = int(request.args.get("children", 0))
@@ -107,6 +118,7 @@ def recommend():
         return jsonify(mesazhi="Duhet te kete se paku 1 i rritur."), 400
     guests = adults + children
 
+    # HAPI 2: lexojme datat (jane opsionale)
     check_in = request.args.get("check_in", "").strip()
     check_out = request.args.get("check_out", "").strip()
     nights = None
@@ -125,6 +137,8 @@ def recommend():
 
     ref = reference_date.isoformat()
 
+    # HAPI 3: marrim nga databaza paketat aktive qe e mbajne numrin e personave
+    # dhe qe jane brenda periudhes (valid_from / valid_to), nese ato jane te mbushura
     conn = lidhu()
     packages = conn.execute("""
         SELECT * FROM packages
@@ -134,7 +148,7 @@ def recommend():
           AND (valid_to IS NULL OR valid_to = '' OR valid_to >= ?)
     """, (guests, ref, ref)).fetchall()
 
-    # Nuk ka paketa: gjejme arsyen (shume persona, ose jashte periudhes)
+    # HAPI 4: nese nuk ka asnje pakete, themi pse (shume persona, ose jashte periudhes)
     if not packages:
         max_row = conn.execute(
             "SELECT MAX(max_guests) AS m FROM packages WHERE is_active = 1"
@@ -150,24 +164,21 @@ def recommend():
             msg = "Nuk ka paketa aktive per kete periudhe."
         return jsonify(recommendations=[], mesazhi=msg)
 
+    # HAPI 5: nese ka data, mbajme vetem paketat qe dhoma e tyre eshte e lire
     available = []
     for p in packages:
         if nights is not None and p["room_id"]:
-            busy = conn.execute("""
-                SELECT 1 FROM rezervimet
-                WHERE dhoma_id = ? AND statusi != 'anuluar'
-                  AND data_hyrjes < ? AND data_daljes > ?
-            """, (p["room_id"], check_out, check_in)).fetchone()
-            if busy:
+            if not room_is_free(conn, p["room_id"], check_in, check_out):
                 continue
         available.append(p)
     conn.close()
 
-    # Paketat ekzistojne, por dhoma eshte e zene ne keto data
     if not available:
         return jsonify(recommendations=[],
                        mesazhi="Dhoma eshte e zene ne keto data. Provoni data tjera.")
 
+    # HAPI 6: rendisim (familjare te para nese ka femije, pastaj me e afert me
+    # numrin e personave, pastaj me e lira) dhe kthejme 3 te parat
     def sort_key(p):
         family_first = 0 if (children > 0 and p["is_family"]) else 1
         return (family_first, p["max_guests"] - guests, p["price_per_night"])
