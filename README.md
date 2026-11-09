@@ -19,6 +19,8 @@ Fjalekalimi merret nga variabla `ADMIN_PASSWORD`.
 Projekti ka konfigurimin `vercel.json`, hyrjen `api/index.py` dhe varesine
 `requirements.txt`. Importoje repository-n ne Vercel dhe vendos variablat
 `SECRET_KEY` dhe `ADMIN_PASSWORD` te Project Settings > Environment Variables.
+Nese nuk deshiron deploy automatik, repository mund te perdoret vetem per
+versionim ne GitHub pa lidhje aktive me Vercel.
 
 SQLite nuk eshte databaze e perhershme ne Vercel Serverless. Per testim te
 faqes mund te publikohet, por per rezervime reale perdor nje databaze te
