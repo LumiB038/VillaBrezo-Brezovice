@@ -1,6 +1,6 @@
 import os
 import hmac
-from datetime import date
+from datetime import date, timedelta
 from functools import wraps
 from flask import (Flask, send_from_directory, request, jsonify,
                    session, redirect, render_template)
@@ -105,6 +105,29 @@ def room_is_free(conn, room_id, check_in, check_out):
     return busy is None
 
 
+def next_free_start(conn, room_id, check_in, check_out, nights):
+    """Gjen diten e pare pas rezervimit qe perplaset, ku dhoma eshte e lire
+    per kaq net. Kthen (data_hyrjes, data_daljes) ose None."""
+    row = conn.execute("""
+        SELECT MAX(data_daljes) AS last_out FROM rezervimet
+        WHERE dhoma_id = ? AND statusi != 'anuluar'
+          AND data_hyrjes < ? AND data_daljes > ?
+    """, (room_id, check_out, check_in)).fetchone()
+    if not row or not row["last_out"]:
+        return None
+    start = date.fromisoformat(row["last_out"]) + timedelta(days=1)
+    for _ in range(60):
+        end = start + timedelta(days=nights)
+        if room_is_free(conn, room_id, start.isoformat(), end.isoformat()):
+            return start, end
+        start += timedelta(days=1)
+    return None
+
+
+def fmt_date(d):
+    return d.strftime("%d/%m/%Y")
+
+
 @app.route("/api/recommend")
 def recommend():
     # HAPI 1: lexojme numrin e te rriturve dhe te femijeve
@@ -171,11 +194,36 @@ def recommend():
             if not room_is_free(conn, p["room_id"], check_in, check_out):
                 continue
         available.append(p)
-    conn.close()
 
+    # Dhoma eshte e zene: gjejme diten e pare te lire dhe e sugjerojme
     if not available:
+        best = None
+        for p in packages:
+            if p["room_id"]:
+                found = next_free_start(conn, p["room_id"], check_in, check_out, nights)
+                if found and (best is None or found[0] < best[0][0]):
+                    best = (found, p)
+        conn.close()
+
+        if best:
+            (start, end), p = best
+            msg = (f"Na vjen keq, vila eshte e rezervuar nga {fmt_date(hyrja)} "
+                   f"deri {fmt_date(dalja)}. A deshironi te rezervoni nga "
+                   f"{fmt_date(start)} deri {fmt_date(end)}?")
+            suggestion = {
+                "check_in": start.isoformat(),
+                "check_out": end.isoformat(),
+                "room_id": p["room_id"],
+                "package": p["title"],
+                "nights": nights,
+                "total_price": nights * p["price_per_night"],
+            }
+            return jsonify(recommendations=[], mesazhi=msg, suggestion=suggestion)
+
         return jsonify(recommendations=[],
                        mesazhi="Dhoma eshte e zene ne keto data. Provoni data tjera.")
+
+    conn.close()
 
     # HAPI 6: rendisim (familjare te para nese ka femije, pastaj me e afert me
     # numrin e personave, pastaj me e lira) dhe kthejme 3 te parat

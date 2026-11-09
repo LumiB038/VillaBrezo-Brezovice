@@ -114,6 +114,41 @@
     scrollDown();
   }
 
+  // Karta kur dhoma eshte e zene dhe boti sugjeron data te reja
+  function addSuggestion(s, ctx) {
+    var card = el("div", "vb-card");
+    if (s.total_price !== undefined) {
+      card.appendChild(
+        el("p", null, s.nights + " net, totali: " + s.total_price + EURO)
+      );
+    }
+
+    var yes = el("a", "vb-book", "Po, rezervo");
+    yes.href = buildBookingUrl(
+      { room_id: s.room_id, title: s.package },
+      {
+        adults: ctx.adults,
+        children: ctx.children,
+        checkIn: s.check_in,
+        checkOut: s.check_out
+      }
+    );
+
+    var no = el("a", "vb-book", "Jo, faleminderit");
+    no.href = "#";
+    no.style.background = "#777";
+    no.style.marginLeft = "6px";
+    no.addEventListener("click", function (e) {
+      e.preventDefault();
+      addMessage("Ne rregull. Provoni data tjera dhe do t'ju rekomandoj paketat.", "bot");
+    });
+
+    card.appendChild(yes);
+    card.appendChild(no);
+    messages.appendChild(card);
+    scrollDown();
+  }
+
   var greeted = false;
   function openPanel() {
     panel.classList.add("vb-open");
@@ -194,6 +229,7 @@
           return;
         }
         addMessage(data.mesazhi, "bot");
+        if (data.suggestion) addSuggestion(data.suggestion, ctx);
         (data.recommendations || []).forEach(function (rec) {
           addCard(rec, ctx);
         });
