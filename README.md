@@ -15,6 +15,15 @@ Python (Flask), SQLite, HTML, CSS, JavaScript.
 Admin paneli: `http://127.0.0.1:5000/admin/login`
 Fjalekalimi merret nga variabla `ADMIN_PASSWORD`.
 
+## Publikimi ne Vercel
+Projekti ka konfigurimin `vercel.json`, hyrjen `api/index.py` dhe varesine
+`requirements.txt`. Importoje repository-n ne Vercel dhe vendos variablat
+`SECRET_KEY` dhe `ADMIN_PASSWORD` te Project Settings > Environment Variables.
+
+SQLite nuk eshte databaze e perhershme ne Vercel Serverless. Per testim te
+faqes mund te publikohet, por per rezervime reale perdor nje databaze te
+jashtme dhe lidhjen e saj me API-te.
+
 ## Funksionalitetet
 - **Rezervimi:** forma ne `rezervo.html` dergon te dhenat ne `/api/rezervo`. Serveri
   kontrollon datat, kapacitetin dhe nese dhoma eshte e zene.

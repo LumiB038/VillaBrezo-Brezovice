@@ -56,6 +56,10 @@
   var childrenInput = makeInput("number", "0", "0");
   var checkInInput = makeInput("date", undefined, todayISO());
   var checkOutInput = makeInput("date", undefined, todayISO());
+  var spaceInput = document.createElement("select");
+  spaceInput.innerHTML =
+    '<option value="1">Vetëm kati i parë - 150€ / nata</option>' +
+    '<option value="2">Të dy katet (Loft Alpin) - 200€ / nata</option>';
   var submitBtn = el("button", "vb-submit", "Rekomando paketa");
   submitBtn.type = "submit";
 
@@ -63,6 +67,7 @@
   form.appendChild(makeField("Femije", childrenInput));
   form.appendChild(makeField("Hyrja (opsionale)", checkInInput));
   form.appendChild(makeField("Dalja (opsionale)", checkOutInput));
+  form.appendChild(makeField("Hapësira", spaceInput));
   form.appendChild(submitBtn);
 
   panel.appendChild(header);
@@ -70,6 +75,30 @@
   panel.appendChild(form);
   document.body.appendChild(toggleBtn);
   document.body.appendChild(panel);
+
+  function lidhDatat() {
+    checkInInput.addEventListener("change", function () {
+      var checkIn = checkInInput.value;
+      if (!checkIn) {
+        checkOutInput.min = todayISO();
+        checkOutInput.value = "";
+        return;
+      }
+
+      checkOutInput.min = checkIn;
+      if (!checkOutInput.value || checkOutInput.value <= checkIn) {
+        checkOutInput.value = checkIn;
+      }
+    });
+
+    checkOutInput.addEventListener("change", function () {
+      if (checkInInput.value && checkOutInput.value < checkInInput.value) {
+        checkOutInput.value = checkInInput.value;
+      }
+    });
+  }
+
+  lidhDatat();
 
   // ---------- Funksione ndihmese ----------
   function scrollDown() {
@@ -84,7 +113,7 @@
 
   function buildBookingUrl(rec, ctx) {
     var params = new URLSearchParams();
-    if (rec.room_id) params.set("room", rec.room_id);
+    params.set("room", ctx.roomId || rec.room_id || "1");
     params.set("persona", ctx.adults + ctx.children);
     if (ctx.checkIn && ctx.checkOut) {
       params.set("check_in", ctx.checkIn);
@@ -200,13 +229,15 @@
 
     var summary = adults + " te rritur, " + children + " femije";
     if (checkIn && checkOut) summary += ", " + checkIn + " deri " + checkOut;
+    summary += ", " + (spaceInput.value === "2" ? "të dy katet" : "vetëm kati i parë");
     addMessage(summary, "user");
 
     var ctx = {
       adults: adults,
       children: children,
       checkIn: checkIn,
-      checkOut: checkOut
+      checkOut: checkOut,
+      roomId: spaceInput.value
     };
 
     var params = new URLSearchParams({ adults: adults, children: children });

@@ -178,6 +178,16 @@
   border-radius: 5px;
 }
 
+.vb-chat-form select {
+  width: 100%;
+  margin: 0;
+  padding: 7px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #fff;
+}
+
 .vb-chat-form .vb-submit {
   grid-column: 1 / -1;
   width: 100%;

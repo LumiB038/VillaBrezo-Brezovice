@@ -5,25 +5,102 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hyrje Admin - Villa Brezo</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #2b2b2b; display: flex;
-         align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-  .kutia { background: #fff; padding: 32px; border-radius: 10px; width: 100%; max-width: 340px; }
-  h2 { margin-top: 0; text-align: center; }
-  input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc;
-          border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-  button { width: 100%; padding: 12px; background: #28a745; color: #fff; border: 0;
-           border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; }
-  .gabim { color: #c0392b; text-align: center; margin: 8px 0; }
+  :root { --e-gjelber: #2f9e63; --e-erret: #16231e; --e-teksti: #1d2b24; --e-zbehte: #718078; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; margin: 0; min-height: 100vh; display: flex;
+         align-items: center; justify-content: center; padding: 28px;
+         color: var(--e-teksti); background: #edf3ee; overflow-x: hidden; }
+  body::before, body::after { content: ""; position: fixed; width: 420px; height: 420px;
+         border-radius: 50%; background: rgba(47,158,99,.13); filter: blur(2px); z-index: -1; }
+  body::before { top: -190px; right: -120px; }
+  body::after { bottom: -240px; left: -140px; background: rgba(22,35,30,.1); }
+  .kutia { display: grid; grid-template-columns: minmax(240px, .9fr) minmax(320px, 1.1fr);
+           width: min(900px, 100%); min-height: 510px; overflow: hidden; border-radius: 24px;
+           background: #fff; box-shadow: 0 24px 70px rgba(22,35,30,.18); }
+  .prezantimi { display: flex; flex-direction: column; justify-content: space-between;
+           padding: 42px 38px; color: #fff; background: linear-gradient(145deg, #1d3529, #286346); }
+  .shenja { display: inline-flex; align-items: center; justify-content: center; width: 48px;
+           height: 48px; border: 1px solid rgba(255,255,255,.35); border-radius: 14px;
+           color: #b9efcc; font-size: 24px; font-weight: bold; }
+  .prezantimi h1 { margin: 28px 0 12px; font-size: clamp(28px, 4vw, 40px); line-height: 1.08; }
+  .prezantimi p { max-width: 290px; margin: 0; color: #d3e6d9; line-height: 1.6; font-size: 14px; }
+  .siguria { display: flex; gap: 10px; align-items: center; color: #c9e8d2; font-size: 12px; }
+  .siguria::before { content: "✓"; display: grid; place-items: center; width: 22px; height: 22px;
+           border-radius: 50%; background: rgba(185,239,204,.16); color: #b9efcc; font-weight: bold; }
+  .forma { align-self: center; width: 100%; padding: 42px 48px; }
+  .etiketa { display: block; margin-bottom: 8px; color: var(--e-teksti); font-size: 13px; font-weight: bold; }
+  .titulli { margin: 0 0 8px; font-size: 27px; letter-spacing: -.5px; }
+  .nentitull { margin: 0 0 30px; color: var(--e-zbehte); font-size: 14px; line-height: 1.5; }
+  .fusha { position: relative; }
+  input { width: 100%; padding: 14px 72px 14px 14px; border: 1px solid #d5dfd8;
+          border-radius: 10px; color: var(--e-teksti); background: #f8fbf8; font-size: 15px;
+          transition: border-color .2s, box-shadow .2s, background .2s; }
+  input:focus { outline: none; border-color: var(--e-gjelber); background: #fff;
+           box-shadow: 0 0 0 4px rgba(47,158,99,.13); }
+  .shfaq { position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+           padding: 7px 8px; border: 0; border-radius: 6px; color: var(--e-gjelber);
+           background: transparent; cursor: pointer; font-size: 12px; font-weight: bold; }
+  .shfaq:hover, .shfaq:focus-visible { background: #e8f4eb; }
+  .hyr { width: 100%; margin-top: 22px; padding: 14px; border: 0; border-radius: 10px;
+         color: #fff; background: var(--e-gjelber); font-size: 15px; font-weight: bold;
+         cursor: pointer; box-shadow: 0 8px 18px rgba(47,158,99,.22); transition: transform .2s, background .2s; }
+  .hyr:hover { background: #267d4e; transform: translateY(-1px); }
+  .gabim { margin-bottom: 18px; padding: 11px 13px; border: 1px solid #f3b9bf; border-radius: 9px;
+           color: #8d2933; background: #fff1f2; font-size: 13px; }
+  .kthehu { display: inline-block; margin-top: 22px; color: var(--e-zbehte); font-size: 13px;
+            text-decoration: none; }
+  .kthehu:hover { color: var(--e-gjelber); }
+  @media (max-width: 680px) {
+    body { padding: 16px; }
+    .kutia { display: block; min-height: 0; }
+    .prezantimi { padding: 28px; }
+    .prezantimi h1 { margin-top: 20px; font-size: 30px; }
+    .siguria { margin-top: 28px; }
+    .forma { padding: 32px 28px; }
+  }
 </style>
 </head>
 <body>
   <div class="kutia">
-    <h2>Villa Brezo - Admin</h2>
-    {% if gabim %}<div class="gabim">{{ gabim }}</div>{% endif %}
-    <form method="post">
-      <input type="password" name="fjalekalimi" placeholder="Fjalëkalimi" required autofocus>
-      <button type="submit">Hyr</button>
-    </form>
+    <section class="prezantimi">
+      <div>
+        <div class="shenja" aria-hidden="true">VB</div>
+        <h1>Villa Brezo<br>Admin</h1>
+        <p>Menaxhoni rezervimet dhe përvojën e mysafirëve nga një hapësirë e vetme.</p>
+      </div>
+      <div class="siguria">Hapësirë e sigurt për stafin</div>
+    </section>
+
+    <section class="forma">
+      <h2 class="titulli">Mirë se u kthyet</h2>
+      <p class="nentitull">Hyni për të vazhduar në panelin e administrimit.</p>
+
+      {% if gabim %}<div class="gabim" role="alert">{{ gabim }}</div>{% endif %}
+
+      <form method="post">
+        <label class="etiketa" for="fjalekalimi">Fjalëkalimi</label>
+        <div class="fusha">
+          <input type="password" id="fjalekalimi" name="fjalekalimi" required autofocus
+                 autocomplete="current-password">
+          <button type="button" class="shfaq" id="shfaq" aria-controls="fjalekalimi"
+                  aria-label="Shfaq fjalëkalimin">Shfaq</button>
+        </div>
+        <button type="submit" class="hyr">Hyr në panel</button>
+      </form>
+
+      <a class="kthehu" href="/">← Kthehu te faqja kryesore</a>
+    </section>
   </div>
+
+<script>
+  const fusha = document.getElementById("fjalekalimi");
+  const buton = document.getElementById("shfaq");
+  buton.addEventListener("click", function () {
+    const fshehur = fusha.type === "password";
+    fusha.type = fshehur ? "text" : "password";
+    buton.textContent = fshehur ? "Fshih" : "Shfaq";
+    buton.setAttribute("aria-label", fshehur ? "Fshih fjalëkalimin" : "Shfaq fjalëkalimin");
+  });
+</script>
 </body>
 </html>

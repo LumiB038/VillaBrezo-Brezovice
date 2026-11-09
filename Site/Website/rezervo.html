@@ -23,15 +23,15 @@
     <div class="navbar-title">Villa Brezo - Brezovicë</div>
 
     <ul>
-        <li><a href="main.html">Home</a></li>
-        <li><a href="aboutus.html">About Us</a></li>
-        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="main.html">Kryefaqja</a></li>
+        <li><a href="aboutus.html">Rreth nesh</a></li>
+        <li><a href="gallery.html">Galeria</a></li>
         <li><a href="ofertat.html">Oferta</a></li>
-        <li><a href="rezervo.html">Rezervo Ketu</a></li>
+        <li><a href="rezervo.html" aria-current="page">Rezervo</a></li>
     </ul>
   </nav>
 
-  <section class="hero-container">
+  <section class="hero-container booking-hero">
     <img src="Foto/background.jpg" alt="Brezovica Villa" class="hero-image"/>
 
     <div class="booking-container">
@@ -45,10 +45,11 @@
         <label for="datat">Zgjidh datat e qëndrimit</label>
         <input type="text" id="datat" name="datat" placeholder="Prej datës - Deri në datë" required>
 
-        <select name="dhoma_id" required>
-            <option value="" disabled selected>Zgjidh llojin e dhomës</option>
-            <option value="1">Kati i 1-re - €150/nata/5 persona</option>
-            <option value="2">Loft Alpin (shtretër) - €200/nata/10 persona</option>
+        <label for="dhoma">Zgjidh hapësirën</label>
+        <select id="dhoma" name="dhoma_id" required>
+            <option value="" disabled selected>Zgjidh një opsion</option>
+            <option value="1">Vetëm kati i parë - €150/nata, deri 5 persona</option>
+            <option value="2">Të dy katet (Loft Alpin) - €200/nata, deri 10 persona</option>
         </select>
 
         <input type="number" name="persona" placeholder="Numri i personave" min="1" required>
